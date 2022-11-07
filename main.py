@@ -1,3 +1,5 @@
+import os
+os.environ["PL_TORCH_DISTRIBUTED_BACKEND"] = "gloo"
 import argparse, os, sys, datetime, glob, importlib, csv
 import numpy as np
 import time
@@ -398,6 +400,7 @@ class CUDACallback(Callback):
         # Reset the memory use counter
         torch.cuda.reset_peak_memory_stats(trainer.root_gpu)
         torch.cuda.synchronize(trainer.root_gpu)
+        
         self.start_time = time.time()
 
     def on_train_epoch_end(self, trainer, pl_module, outputs):
@@ -656,6 +659,8 @@ if __name__ == "__main__":
 
         trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
 
+        print("trainer_opt:", trainer_opt)
+        print("trainer_kwargs:", trainer_kwargs)
         trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
         trainer.logdir = logdir  ###
 
@@ -673,7 +678,9 @@ if __name__ == "__main__":
         # configure learning rate
         bs, base_lr = config.data.params.batch_size, config.model.base_learning_rate
         if not cpu:
-            ngpu = len(lightning_config.trainer.gpus.strip(",").split(','))
+            print('gpus:', lightning_config.trainer.gpus)
+            #ngpu = len(lightning_config.trainer.gpus.strip(",").split(','))
+            ngpu = 1
         else:
             ngpu = 1
         if 'accumulate_grad_batches' in lightning_config.trainer:
@@ -710,8 +717,10 @@ if __name__ == "__main__":
 
         import signal
 
-        signal.signal(signal.SIGUSR1, melk)
-        signal.signal(signal.SIGUSR2, divein)
+        signal.signal(signal.SIGTERM, melk)
+        signal.signal(signal.SIGTERM, divein)
+
+        print("trainer gpus:", trainer.gpus, trainer.num_gpus)
 
         # run
         if opt.train:

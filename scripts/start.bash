@@ -1,0 +1,1 @@
+python .\main.py -t --base .\configs\autoencoder\autoencoder_kl_16x16x4.yaml --gpus -1 --scale_lr False --num_nodes 1 --check_val_every_n_epoch 10
